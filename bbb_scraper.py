@@ -22,7 +22,7 @@ s = requests.session()
 # This function gets JSON schedule data from JDA for the week of a given date, and returns it as a python dict.
 def getSchedule(wantedDate):
     r = s.get('https://bbnb-wfmr.jdadelivers.com/retail/data/ess/api/MySchedule/' + str(today) + '?&id=' +
-              str(wantedDate) + '&siteId=1001414')  # Get schedule for this week from URL
+              str(wantedDate) + '&siteId=1001414')  # Get schedule for this week from JDA API
     return json.loads(r.text)  # And return it as a dictionary
 
 # This function extracts all known workdays from JDA, cleans them, and makes a list of them.
@@ -60,10 +60,10 @@ def main():
     msgBody = ""
     for shift in shifts:
         shiftStr = makePretty(shift)
-        if len(msgBody) + len(shiftStr) <= MAX_TEXT_LENGTH: #as long as I can fit the shift string into the message
-            msgBody += shiftStr #add it to the message 
-        else: #send the message and start a new one
-            sendText(msgBody[:-1]) #-1 gets rid of newline at the end
+        if len(msgBody) + len(shiftStr) <= MAX_TEXT_LENGTH: # If shift fits in current message, add it
+            msgBody += shiftStr 
+        else: # Else send message and start a new one
+            sendText(msgBody[:-1]) # -1 gets rid of newline at the end
             msgBody = shiftStr
     sendText(msgBody[:-1])
 
