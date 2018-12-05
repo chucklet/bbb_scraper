@@ -2,16 +2,15 @@ import requests
 import datetime
 import json
 import calendar
-
 from googlevoice import Voice
 
 # This program logs in and retrieves all current schedule data from BBB JDA webserver,
-# then formats it, and sends it to a phone via SMS
-# By Charles Martin.
+# then formats it, and sends it to a phone via Google Voice SMS.
+# By Charles Martin
 
 # Global Variables/Config Values
 MAX_TEXT_LENGTH = 150
-PHONE_NUMBER = "+1FOOBAR" #+1 and then 10-digit number, no spaces
+PHONE_NUMBER = "+1FOOBAR" #+1 (Country Code) and then 10-digit phone number, no separators
 BBB_USERNAME = "YOUR USER NAME"
 BBB_PASSWORD = "YOUR PASSWORD"
 
@@ -26,15 +25,15 @@ def getSchedule(wantedDate):
               str(wantedDate) + '&siteId=1001414')  # Get schedule for this week from URL
     return json.loads(r.text)  # And return it as a dictionary
 
-# This function extracts all known workdays from JDA, cleans them, and makes a list of them
+# This function extracts all known workdays from JDA, cleans them, and makes a list of them.
 def buildShiftList():
     finishedShiftList = []
     wantedDate = today
     webSchedule = getSchedule(today)  # get this weeks schedule
-    while (webSchedule["data"]["NetScheduledHours"]):  # While the retrieved week has hours (stop at first 0 hour week)
+    while (webSchedule["data"]["NetScheduledHours"]):  # Keep going until no hours for the week
         for day in webSchedule["data"]["Days"]:
             for shift in day['PayScheduledShifts']:
-                finishedShiftList.append({
+                finishedShiftList.append({ #This is all I need to keep from each shift
                     'id' : shift['ScheduledShiftID']+1,
                     'job' : shift['Job']['Name'],
                     'start' : shift['Start'],
@@ -61,10 +60,10 @@ def main():
     msgBody = ""
     for shift in shifts:
         shiftStr = makePretty(shift)
-        if len(msgBody) + len(shiftStr) <= MAX_TEXT_LENGTH: #as long as I can fit the string into the message
+        if len(msgBody) + len(shiftStr) <= MAX_TEXT_LENGTH: #as long as I can fit the shift string into the message
             msgBody += shiftStr #add it to the message 
-        else:
-            sendText(msgBody[:-1])
+        else: #send the message and start a new one
+            sendText(msgBody[:-1]) #-1 gets rid of newline at the end
             msgBody = shiftStr
     sendText(msgBody[:-1])
 
