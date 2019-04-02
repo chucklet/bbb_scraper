@@ -2,6 +2,7 @@ import requests
 import datetime
 import json
 import calendar
+import os
 from googlevoice import Voice
 
 # This program logs in and retrieves all current schedule data from BBB JDA webserver,
@@ -13,6 +14,7 @@ MAX_TEXT_LENGTH = 150
 PHONE_NUMBER = "+1FOOBAR" #+1 (Country Code) and then 10-digit phone number, no separators
 BBB_USERNAME = "YOUR USER NAME"
 BBB_PASSWORD = "YOUR PASSWORD"
+LOCAL_DATA_FILENAME = "bbbscraper.json"
 
 login_data = {'loginName': BBB_USERNAME, 'password': BBB_PASSWORD}
 
@@ -53,10 +55,7 @@ def sendText(words):
     voice.login()
     voice.send_sms(PHONE_NUMBER, words)
 
-def main():
-    s.post('https://bbnb-wfmr.jdadelivers.com/retail/data/login', login_data)  # Log in
-    shifts = buildShiftList()
-
+def sendShifts(shifts):
     msgBody = ""
     for shift in shifts:
         shiftStr = makePretty(shift)
@@ -66,5 +65,34 @@ def main():
             sendText(msgBody[:-1]) # -1 gets rid of newline at the end
             msgBody = shiftStr
     sendText(msgBody[:-1])
+    
+def isSubdict(small, big):
+    return all(item in big for item in small)
 
-main()
+def main():
+    s.post('https://bbnb-wfmr.jdadelivers.com/retail/data/login', login_data)  # Log in
+    shifts = buildShiftList()
+    local_path = os.path.join(os.getcwd(), LOCAL_DATA_FILENAME)
+    
+    if(not os.path.isfile(local_path)): #if local file does not exist
+        file = open(local_path, 'w')
+        file.write(json.dumps(shifts))
+        file.close()
+        sendShifts(shifts)
+        return 1
+    
+    file = open(local_path)
+    local_data = json.loads(file.read())
+    file.close()
+    if(not isSubdict(shifts, local_data)): #if there's new data in the download
+        sendShifts(shifts)
+        file = open(local_path, 'w')
+        file.write(json.dumps(shifts))
+        file.close()
+        return 1
+    return 0
+            
+        
+    
+
+print main()
